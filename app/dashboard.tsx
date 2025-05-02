@@ -13,9 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { logOut } from '../services/authService';
 import { getData } from '../services/databaseService';
 import { useAuth } from '../context/AuthContext';
+
 
 // Define TypeScript interfaces
 interface Service {
@@ -30,14 +30,17 @@ export default function Dashboard() {
   const router = useRouter();
   const { currentUser, isAdmin } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   
   // Define your service blocks with proper routes
   const serviceBlocks = [
     { id: 'hotels', name: 'Hotels', description: 'Find the best accommodations', route: '/services/hotels' },
-    { id: 'restaurants', name: 'Restaurants', description: 'Discover local cuisine', route: '/services/restaurants' },
+    { id: 'restaurants', name: 'Restaurants', description: 'Discover local cuisine', route: '/services/resturants' },
     { id: 'transportation', name: 'Transportation', description: 'Get around easily', route: '/services/transportation' },
     { id: 'simCards', name: 'SIM Cards', description: 'Stay connected', route: '/services/simCards' },
-    { id: 'guides', name: 'Guides', description: 'Explore with local guides', route: '/services/guides' }
+    { id: 'guides', name: 'Guides', description: 'Explore with local guides', route: '/services/guides' },
+    { id: 'bank', name: 'Banks', description: 'find your best trasfer method', route: '/services/bank' },
   ];
   
   // Get services on component mount
@@ -57,46 +60,63 @@ export default function Dashboard() {
     
     fetchServices();
   }, []);
-  
-  const handleLogout = async () => {
-    const { error } = await logOut();
-    
-    if (error) {
-      Alert.alert('Error', 'Failed to log out. Please try again.');
-      return;
+
+  // Update filtered services when search query changes or when services change
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      // If no search query, show all service blocks
+      setFilteredServices(serviceBlocks);
+    } else {
+      // Filter service blocks based on search query
+      const filtered = serviceBlocks.filter(service => 
+        service.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        service.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredServices(filtered);
     }
-    
-    router.replace('/');
+  }, [searchQuery, services]);
+
+  // Initialize filtered services with all service blocks
+  useEffect(() => {
+    setFilteredServices(serviceBlocks);
+  }, []);
+  
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
   };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+  
   
   return (
     <ImageBackground
       source={require("../assets/images/thefillbac.png")}
       style={styles.backgroundImage}
+      
     >
       <View style={styles.container}>
         {/* Header */}
+
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image
               source={{uri: 'https://via.placeholder.com/40'}}
               style={styles.logoImage}
             />
-            <Text style={styles.logoText}>HOPPER</Text>
+            <Text style={styles.logoText}>Home</Text>
           </View>
           <View style={styles.headerButtons}>
-            {isAdmin && (
-              <TouchableOpacity 
-                style={styles.adminButton}
-                onPress={() => router.push('/admin')}
-              >
-                <Ionicons name="settings-outline" size={24} color="#0a2463" />
-                <Text style={styles.adminText}>Admin</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={24} color="black" />
+          {isAdmin && (
+            <TouchableOpacity 
+              style={styles.adminButton}
+              onPress={() => router.push('/admin')}
+            >
+              <Ionicons name="settings-outline" size={24} color="#0a2463" />
+              <Text style={styles.adminText}>Admin</Text>
             </TouchableOpacity>
+          )}
           </View>
         </View>
         
@@ -104,8 +124,8 @@ export default function Dashboard() {
         {currentUser && (
           <View style={styles.welcomeContainer}>
             <Text style={styles.welcomeText}>
-              Welcome, {currentUser.displayName || 'User'}!
-              {isAdmin && ' (Admin)'}
+              Welcome, {currentUser?.fullName}!
+              {isAdmin ? ' (Admin)' : ''}
             </Text>
           </View>
         )}
@@ -117,57 +137,63 @@ export default function Dashboard() {
             style={styles.searchInput}
             placeholder="Search"
             placeholderTextColor="gray"
+            value={searchQuery}
+            onChangeText={handleSearch}
+            returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="gray" />
+            </TouchableOpacity>
+          )}
         </View>
         
-        {/* Service Blocks Grid */}
-        <ScrollView style={styles.scrollView}>
-          <View style={styles.gridContainer}>
-            {serviceBlocks.map((service, index) => (
-              <TouchableOpacity
-                key={service.id}
-                style={styles.serviceBlock}
-                onPress={() => router.push(service.route as any)}
-              >
-                <Text style={styles.serviceTitle}>{service.name}</Text>
-                <Text style={styles.serviceDescription}>{service.description}</Text>
-              </TouchableOpacity>
-            ))}
+        {/* Search Results or Empty State */}
+        {filteredServices.length === 0 && searchQuery.trim() !== '' ? (
+          <View style={styles.emptyResultContainer}>
+            <Text style={styles.emptyResultText}>No results found for "{searchQuery}"</Text>
           </View>
-        </ScrollView>
+        ) : (
+          /* Service Blocks Grid */
+          <ScrollView style={styles.scrollView}>
+            <View style={styles.gridContainer}>
+              {filteredServices.map((service) => (
+                <TouchableOpacity
+                  key={service.id}
+                  style={styles.serviceBlock}
+                  onPress={() => router.push(service.route as any)}
+                >
+                  <Text style={styles.serviceTitle}>{service.name}</Text>
+                  <Text style={styles.serviceDescription}>{service.description}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        )}
 
         {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
           <TouchableOpacity 
             style={styles.navItem}
-            onPress={() => router.push("/")}
+            onPress={() => router.push("/profile")}
           >
             <Ionicons name="person" size={24} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navItem}
-            onPress={() => router.push("/football")}
-          >
-            <Ionicons name="football" size={24} color="white" />
-          </TouchableOpacity>
+
           <TouchableOpacity 
             style={styles.navItem}
             onPress={() => router.push("/dashboard")}
           >
             <Ionicons name="home" size={24} color="white" />
           </TouchableOpacity>
+
           <TouchableOpacity 
             style={styles.navItem}
-            onPress={() => router.push("/services/googleMaps")}
+            onPress={() => router.push("/football")}
           >
-            <Ionicons name="map-outline" size={24} color="white" />
+            <Ionicons name="football" size={24} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navItem}
-            onPress={() => router.push("/services/translation")}
-          >
-            <Ionicons name="chatbubbles-outline" size={24} color="white" />
-          </TouchableOpacity>
+
         </View>
       </View>
     </ImageBackground>
@@ -208,6 +234,7 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 30,
   },
   adminButton: {
     flexDirection: 'row',
@@ -216,7 +243,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
-    marginRight: 12,
+    marginRight: 30,
   },
   adminText: {
     marginLeft: 4,
@@ -247,6 +274,20 @@ const styles = StyleSheet.create({
   searchInput: {
     height: 40,
     flex: 1,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  emptyResultContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  emptyResultText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,

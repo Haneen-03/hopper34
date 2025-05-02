@@ -1,4 +1,4 @@
-// app/services/simCards.tsx
+// app/services/bank.tsx
 import React, { useEffect, useState } from 'react';
 import { 
   View, 
@@ -17,7 +17,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Stack } from 'expo-router';
 
-interface SimCardItem {
+interface BankItem {
   id: string;
   name: string;
   title?: string;
@@ -26,59 +26,53 @@ interface SimCardItem {
   image: string;
   imageUrl?: string;
   website?: string;
-  provider?: string;
-  dataAmount?: string;
-  price?: string;
 }
 
-export default function SimCardsScreen() {
+export default function BanksScreen() {
   const router = useRouter();
-  const [simCards, setSimCards] = useState<SimCardItem[]>([]);
+  const [banks, setBanks] = useState<BankItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSimCard, setSelectedSimCard] = useState<SimCardItem | null>(null);
+  const [selectedBank, setSelectedBank] = useState<BankItem | null>(null);
 
-  // Fetch SIM cards directly from the 'simCards' document
+  // Fetch banks directly from the 'banks' document
   useEffect(() => {
-    fetchSimCards();
+    fetchBanks();
   }, []);
 
-  const fetchSimCards = async () => {
+  const fetchBanks = async () => {
     setLoading(true);
     try {
-      console.log(`Fetching SIM cards from the 'simCards' document`);
-      // Direct reference to the simCards document with logical ID
-      const simCardsRef = collection(db, 'services', 'simCards', 'items');
-      const snapshot = await getDocs(simCardsRef);
+      console.log(`Fetching banks from the 'banks' document`);
+      // Direct reference to the banks document with logical ID
+      const banksRef = collection(db, 'services', 'bank', 'items');
+      const snapshot = await getDocs(banksRef);
       
-      console.log(`Found ${snapshot.size} SIM cards`);
+      console.log(`Found ${snapshot.size} banks`);
       
       if (snapshot.empty) {
-        setSimCards([]);
+        setBanks([]);
       } else {
-        const simCardsData = snapshot.docs.map(doc => {
-          console.log(`SIM Card: ${doc.id}`, doc.data());
+        const banksData = snapshot.docs.map(doc => {
+          console.log(`Bank: ${doc.id}`, doc.data());
           const data = doc.data();
           return {
             id: doc.id,
-            name: data.name || data.title || "Unnamed SIM Card",
-            title: data.title || data.name || "Unnamed SIM Card",
+            name: data.name || data.title || "Unnamed Bank",
+            title: data.title || data.name || "Unnamed Bank",
             description: data.description || "",
-            location: data.location || "Available across Saudi Arabia",
+            location: data.location || "Saudi Arabia",
             image: data.image || data.imageUrl || "https://via.placeholder.com/400x200?text=No+Image",
             imageUrl: data.imageUrl || data.image || "https://via.placeholder.com/400x200?text=No+Image",
-            website: data.website || "",
-            provider: data.provider || "",
-            dataAmount: data.dataAmount || "",
-            price: data.price || ""
+            website: data.website || ""
           };
-        }) as SimCardItem[];
+        }) as BankItem[];
         
-        console.log("SIM Cards data:", simCardsData);
-        setSimCards(simCardsData);
+        console.log("Banks data:", banksData);
+        setBanks(banksData);
       }
     } catch (error) {
-      console.error('Error fetching SIM cards:', error);
-      setSimCards([]);
+      console.error('Error fetching banks:', error);
+      setBanks([]);
     } finally {
       setLoading(false);
     }
@@ -92,91 +86,91 @@ export default function SimCardsScreen() {
     }
   };
 
-  const showSimCardDetails = (simCard: SimCardItem) => {
-    setSelectedSimCard(simCard);
+  const showBankDetails = (bank: BankItem) => {
+    setSelectedBank(bank);
   };
 
   const backToList = () => {
-    setSelectedSimCard(null);
+    setSelectedBank(null);
   };
 
-  const renderInfoCard = () => {
+  const renderCurrencyInfoCard = () => {
     return (
       <View style={styles.infoCard}>
-        <Text style={styles.infoCardTitle}>Communication and Internet</Text>
+        <Text style={styles.infoCardTitle}>What you should know about currencies</Text>
         <Text style={styles.infoCardDescription}>
-          Learn about getting SIM cards in Saudi Arabia for your trip. 
-          Find options from local providers with various data packages.
+          Tourists visiting Saudi Arabia can easily exchange currencies and carry out all financial transactions without hassle
+          thanks to the digital transformation of the country's banking sector. In fact, travelling with too much cash is discouraged.
+          Banks in the Kingdom, as major foreign exchange establishments, handle currency exchanges and money transfers.
         </Text>
         
         <View style={styles.infoCardSection}>
-          <Text style={styles.infoCardSectionTitle}>How to Get a SIM Card</Text>
+          <Text style={styles.infoCardSectionTitle}>Basic Information About the Saudi Currency</Text>
           <Text style={styles.infoCardSectionText}>
-            You can purchase SIM cards at the airport, official provider shops, 
-            or any authorized retailer. ID is required for registration.
+            The national currency of the Kingdom of Saudi Arabia is the Saudi Riyal (SAR), which is subdivided into 
+            100 halalas. Banknotes are available in denominations of 1, 5, 10, 50, 100, and 500 riyals. Coins are 
+            available in denominations of 1 Riyal, 2 Riyals, and 1, 5, 10, 25, and 50 halalas.
           </Text>
         </View>
         
         <View style={styles.infoCardSection}>
-          <Text style={styles.infoCardSectionTitle}>Mobile Service Providers</Text>
+          <Text style={styles.infoCardSectionTitle}>What is the Exchange Rate in Saudi Arabia?</Text>
           <Text style={styles.infoCardSectionText}>
-            Major providers include STC, Mobily, and Zain with various 
-            plans for tourists and short-term visitors.
+            All banks in Saudi Arabia offer currency exchange services. You can also 
+            find exchange offices at airports, some shopping malls, and various 
+            locations throughout the Kingdom. Typically, banking hours are from 9:30 
+            AM to 4:30 PM, Saturday to Thursday. Exchange offices usually open later 
+            but may charge higher commission fees.
           </Text>
         </View>
         
         <View style={styles.infoCardSection}>
-          <Text style={styles.infoCardSectionTitle}>Wi-Fi or Free Public Wi-Fi</Text>
-          <Text style={styles.infoCardSectionText}>
-            Free Wi-Fi is available in most hotels, malls, and many restaurants
-            throughout major cities in Saudi Arabia.
-          </Text>
+          <Text style={styles.infoCardSectionTitle}>Saudi Riyal Conversion Calculator Website</Text>
+          <TouchableOpacity 
+            style={styles.infoCardButton}
+            onPress={() => openWebsite("https://xe.com")}
+          >
+            <Text style={styles.infoCardButtonText}>Visit xe.com</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
   };
 
-  const renderSimCardsList = () => {
+  const renderBanksList = () => {
     return (
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
-          {/* Render the info card at the top */}
-          {renderInfoCard()}
-          
-          
-          <View style={styles.simCardsContainer}>
-            <Text style={styles.containerTitle}>Available SIM Card Options</Text>
-            {simCards.length > 0 ? (
-              simCards.map(simCard => (
-                <View key={simCard.id} style={styles.simCard}>
+          {/* Render the currency info card at the top */}
+          {renderCurrencyInfoCard()}
+                    
+          <View style={styles.banksContainer}>
+            <Text style={styles.containerTitle}>Available Banking Options</Text>
+            {banks.length > 0 ? (
+              banks.map(bank => (
+                <View key={bank.id} style={styles.bankCard}>
                   <Image 
-                    source={{ uri: simCard.image || simCard.imageUrl }} 
-                    style={styles.simCardImage}
+                    source={{ uri: bank.image || bank.imageUrl }} 
+                    style={styles.bankImage}
                   />
-                  <View style={styles.simCardInfo}>
-                    <Text style={styles.simCardName}>{simCard.name || simCard.title}</Text>
-                    {simCard.location && (
-                      <Text style={styles.simCardLocation}>{simCard.location}</Text>
-                    )}
-                    {simCard.provider && (
-                      <Text style={styles.simCardProvider}>Provider: {simCard.provider}</Text>
-                    )}
-                    {simCard.price && (
-                      <Text style={styles.simCardPrice}>Price: {simCard.price}</Text>
+                  <View style={styles.bankInfo}>
+                    <Text style={styles.bankName}>{bank.name || bank.title}</Text>
+                    {bank.location && (
+                      <Text style={styles.bankLocation}>{bank.location}</Text>
                     )}
                     
                     <View style={styles.buttonRow}>
                       <TouchableOpacity 
                         style={styles.detailButton}
-                        onPress={() => showSimCardDetails(simCard)}
+                        onPress={() => showBankDetails(bank)}
                       >
                         <Text style={styles.buttonText}>View Details</Text>
                       </TouchableOpacity>
                       
-                      {simCard.website && (
+                      {bank.website && (
                         <TouchableOpacity 
                           style={styles.websiteButton}
-                          onPress={() => openWebsite(simCard.website as string)}
+                          onPress={() => openWebsite(bank.website as string)}
                         >
                           <Text style={styles.buttonText}>Visit Website</Text>
                         </TouchableOpacity>
@@ -186,7 +180,7 @@ export default function SimCardsScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No SIM cards available at the moment.</Text>
+              <Text style={styles.emptyText}>No banks available at the moment.</Text>
             )}
           </View>
         </View>
@@ -194,42 +188,33 @@ export default function SimCardsScreen() {
     );
   };
 
-  const renderSimCardDetails = () => {
-    if (!selectedSimCard) return null;
+  const renderBankDetails = () => {
+    if (!selectedBank) return null;
     
     return (
       <ScrollView style={styles.scrollView}>
         <View style={styles.detailContainer}>
           <Image 
-            source={{ uri: selectedSimCard.image || selectedSimCard.imageUrl }} 
+            source={{ uri: selectedBank.image || selectedBank.imageUrl }} 
             style={styles.detailImage}
           />
-          <Text style={styles.detailName}>{selectedSimCard.name || selectedSimCard.title}</Text>
-          <Text style={styles.detailLocation}>{selectedSimCard.location}</Text>
+          <Text style={styles.detailName}>{selectedBank.name || selectedBank.title}</Text>
           
           {/* Description is shown only in the detail view */}
-          {selectedSimCard.description && (
-            <Text style={styles.detailDescription}>{selectedSimCard.description}</Text>
+          {selectedBank.description && (
+            <Text style={styles.detailDescription}>{selectedBank.description}</Text>
           )}
           
-          {selectedSimCard.provider && (
-            <Text style={styles.detailInfo}>Provider: {selectedSimCard.provider}</Text>
+          {selectedBank.location && selectedBank.location !== selectedBank.description && (
+            <Text style={styles.detailLocation}>{selectedBank.location}</Text>
           )}
           
-          {selectedSimCard.dataAmount && (
-            <Text style={styles.detailInfo}>Data: {selectedSimCard.dataAmount}</Text>
-          )}
-          
-          {selectedSimCard.price && (
-            <Text style={styles.detailInfo}>Price: {selectedSimCard.price}</Text>
-          )}
-          
-          {selectedSimCard.website && (
+          {selectedBank.website && (
             <TouchableOpacity 
               style={styles.detailWebsiteButton}
-              onPress={() => openWebsite(selectedSimCard.website as string)}
+              onPress={() => openWebsite(selectedBank.website as string)}
             >
-              <Text style={styles.detailButtonText}>Visit Provider Website</Text>
+              <Text style={styles.detailButtonText}>Visit Website</Text>
             </TouchableOpacity>
           )}
           
@@ -237,7 +222,7 @@ export default function SimCardsScreen() {
             style={styles.backButton}
             onPress={backToList}
           >
-            <Text style={styles.backButtonText}>Back to SIM Cards</Text>
+            <Text style={styles.backButtonText}>Back to Banks</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -252,11 +237,11 @@ export default function SimCardsScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => selectedSimCard ? backToList() : router.back()}>
+          <TouchableOpacity onPress={() => selectedBank ? backToList() : router.back()}>
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {selectedSimCard ? selectedSimCard.name || selectedSimCard.title : ""}
+            {selectedBank ? selectedBank.name || selectedBank.title : ""}
           </Text>
           <View style={{ width: 24 }} /> {/* Empty view for balance */}
         </View>
@@ -266,7 +251,7 @@ export default function SimCardsScreen() {
             <ActivityIndicator size="large" color="#0a2463" />
           </View>
         ) : (
-          selectedSimCard ? renderSimCardDetails() : renderSimCardsList()
+          selectedBank ? renderBankDetails() : renderBanksList()
         )}
         
         {/* Bottom Navigation */}
@@ -332,7 +317,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
-  // New Info Card Styles
+  // Info Card Styles
   infoCard: {
     backgroundColor: '#0a2463',
     borderRadius: 10,
@@ -343,7 +328,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 8,
+    marginBottom: 15,
+    textAlign: 'center',
   },
   infoCardDescription: {
     fontSize: 14,
@@ -368,15 +354,22 @@ const styles = StyleSheet.create({
     color: 'white',
     lineHeight: 18,
   },
-  // Original Styles
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#0a2463',
-    marginBottom: 16,
-    textAlign: 'center',
+  infoCardButton: {
+    backgroundColor: 'white',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+    alignSelf: 'center',
   },
-  simCardsContainer: {
+  infoCardButtonText: {
+    color: '#0a2463',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  // Bank Container Styles
+  banksContainer: {
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 16,
@@ -400,13 +393,20 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eaeaea',
     paddingBottom: 8,
   },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#0a2463',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   emptyText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
     marginTop: 20,
   },
-  simCard: {
+  bankCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 10,
     marginBottom: 16,
@@ -414,38 +414,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#eaeaea',
   },
-  simCardImage: {
+  bankImage: {
     width: '100%',
     height: 100,
     resizeMode: 'contain',
     backgroundColor: 'white',
   },
-  simCardInfo: {
+  bankInfo: {
     padding: 16,
   },
-  simCardName: {
+  bankName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#0a2463',
     marginBottom: 4,
     textAlign: 'center',
   },
-  simCardLocation: {
+  bankLocation: {
     fontSize: 14,
     color: '#666',
     marginBottom: 8,
-    textAlign: 'center',
-  },
-  simCardProvider: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  simCardPrice: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 12,
     textAlign: 'center',
   },
   buttonRow: {
@@ -476,7 +464,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  // SIM Card Details Styles
+  // Bank Details Styles
   detailContainer: {
     padding: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -497,12 +485,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0a2463',
     textAlign: 'center',
-    marginBottom: 8,
-  },
-  detailLocation: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
     marginBottom: 16,
   },
   detailDescription: {
@@ -513,11 +495,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 10,
   },
-  detailInfo: {
+  detailLocation: {
     fontSize: 16,
-    color: '#333',
+    color: '#666',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   detailWebsiteButton: {
     backgroundColor: '#0a2463',

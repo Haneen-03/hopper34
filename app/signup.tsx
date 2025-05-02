@@ -1,4 +1,3 @@
-// app/signup.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -79,8 +78,9 @@ const Signup = () => {
 
   return (
     <ImageBackground
-      source={require("../assets/images/thefillbac.png")}
+      source={require("../assets/images/logimg.png")}
       style={styles.container}
+      resizeMode="cover"
     >
       <ScrollView contentContainerStyle={styles.innerContainer}>
         <View style={styles.formContainer}>
@@ -154,6 +154,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    width: "100%",
+    height: "100%"
   },
   innerContainer: {
     flexGrow: 1,

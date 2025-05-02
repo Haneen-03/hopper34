@@ -1,0 +1,86 @@
+/* App.css
+
+
+.bg-phone {
+  width: 393px;
+  height: 935px;
+  background-image: url('/public/images/background.png');
+  background-size: cover;
+  background-position: center;
+  margin: auto;
+  position: relative;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  }
+  
+
+  
+ 
+  
+  .menu-icon {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 50;
+  }
+  
+
+  .edit-box {
+    display: flex;
+    justify-content: center;
+    
+  width: 100%;
+  margin-top: 120px;
+  }
+  
+  .form-style {
+  background-color: #0B3D91;
+  color: white;
+  border-radius: 16px;
+  padding: 20px;
+  width: 95%;
+  max-width: 370px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .input-style {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  background-color: white;
+  color: black;
+  }
+  
+ 
+  .submit-button {
+  width: 100%;
+  background-color: white;
+  color: #0B3D91;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 6px;
+  transition: 0.2s;
+  }
+  
+  .submit-button:hover {
+  background-color: #f0f0f0;
+  }
+  
+  
+  .bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  }
+  
+  .nav-icons {
+  display: flex;
+  justify-content: space-around;
+  background-color: #0B3D91;
+  color: white;
+  padding: 12px 0;
+  font-size: 24px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  } */

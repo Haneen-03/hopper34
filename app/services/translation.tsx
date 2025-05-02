@@ -1,263 +1,132 @@
-import React, { useState, useEffect } from "react";
-import { useNavigation } from "@react-navigation/native";
+import React from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  Clipboard,
-  Alert
+  ImageBackground,
+  ScrollView
 } from "react-native";
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-interface Language {
-  code: string;
-  name: string;
-}
-
-// Define your app's navigation structure
-type RootStackParamList = {
-  Dashboard: undefined;
-  // Add other routes as needed
-};
-
-// Create a typed navigation hook
-type TranslationScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 const TranslationPage: React.FC = () => {
-  const navigation = useNavigation<TranslationScreenNavigationProp>();
-  const [sourceText, setSourceText] = useState<string>("");
-  const [translatedText, setTranslatedText] = useState<string>("");
-  const [sourceLanguage, setSourceLanguage] = useState<string>("en");
-  const [targetLanguage, setTargetLanguage] = useState<string>("ar");
-  const [isTranslating, setIsTranslating] = useState<boolean>(false);
-
-  // قائمة اللغات المتاحة
-  const languages: Language[] = [
-    { code: "en", name: "English" },
-    { code: "ar", name: "Arabic" },
-    { code: "es", name: "Spanish" },
-    { code: "fr", name: "French" },
-    { code: "de", name: "German" },
-    { code: "zh", name: "Chinese" },
-    { code: "ru", name: "Russian" },
-    { code: "ja", name: "Japanese" },
-    { code: "hi", name: "Hindi" },
-    { code: "tr", name: "Turkish" },
-  ];
-
-  // تبديل اللغات
-  const swapLanguages = () => {
-    setSourceLanguage(targetLanguage);
-    setTargetLanguage(sourceLanguage);
-    if (translatedText) {
-      setSourceText(translatedText);
-      setTranslatedText("");
-    }
-  };
-
-  // دالة الترجمة (محاكاة API)
-  const translateText = async () => {
-    if (!sourceText.trim()) return;
-    setIsTranslating(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const mockResult = `Translated: "${sourceText}" from ${
-        languages.find((lang) => lang.code === sourceLanguage)?.name
-      } to ${languages.find((lang) => lang.code === targetLanguage)?.name}`;
-      setTranslatedText(mockResult);
-    } catch (error) {
-      console.error("Translation error:", error);
-      setTranslatedText("Error occurred during translation. Please try again.");
-    } finally {
-      setIsTranslating(false);
-    }
-  };
-
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (sourceText.trim()) {
-        translateText();
-      } else {
-        setTranslatedText("");
-      }
-    }, 800);
-
-    return () => clearTimeout(debounceTimer);
-  }, [sourceText, sourceLanguage, targetLanguage]);
-
-  // Handle copy to clipboard
-  const copyToClipboard = () => {
-    Clipboard.setString(translatedText);
-    Alert.alert("Copied", "Translation copied to clipboard");
-  };
+  const router = useRouter();
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.formWrapper}>
-        <Text style={styles.title}>Translation</Text>
+    <ImageBackground
+      source={require("../../assets/images/thefillbac.png")}
+      style={styles.backgroundImage}
+    >
+      
+      <View style={{ flex: 1 }}>
+                <ScrollView contentContainerStyle={styles.container}>
+                <view style={styles.arrow}>
+                    <TouchableOpacity onPress={() => router.push("/dashboard")}>
+                            <Ionicons name="arrow-back" size={24} color="black" />
+                        </TouchableOpacity>
+                        </view>
+        <View style={styles.container}>
+          <View style={styles.card}>
+            <Text style={styles.title}>Translation</Text>
+            <Text style={styles.description}>
+              Here where you can understand everything with just a few steps
+            </Text>
 
-        <View style={styles.languageSelectors}>
-          <TextInput
-            value={sourceLanguage}
-            onChangeText={(text) => setSourceLanguage(text)}
-            style={styles.input}
-          />
-          <TouchableOpacity style={styles.swapButton} onPress={swapLanguages}>
-            <Text style={styles.swapButtonText}>⇄</Text>
-          </TouchableOpacity>
-          <TextInput
-            value={targetLanguage}
-            onChangeText={(text) => setTargetLanguage(text)}
-            style={styles.input}
-          />
+            <TouchableOpacity
+              onPress={() =>
+                window.open(
+                  "https://translate.google.com/?sl=auto&tl=ar&op=translate",
+                  "_blank"
+                )
+              }
+            >
+              <Text style={styles.link}>Click me!</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+        </ScrollView>
 
-        <TextInput
-          value={sourceText}
-          onChangeText={(text) => setSourceText(text)}
-          placeholder="Enter text to translate"
-          style={styles.textarea}
-          multiline={true}
-        />
-
-        <TextInput
-          value={translatedText}
-          placeholder="Translation will appear here"
-          style={[styles.textarea, styles.translatedTextarea]}
-          editable={false}
-          multiline={true}
-        />
-
-        <View style={styles.buttonsContainer}>
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNav}>
           <TouchableOpacity
-            style={styles.clearButton}
-            onPress={() => {
-              setSourceText("");
-              setTranslatedText("");
-            }}
+            style={styles.navItem}
+            onPress={() => router.push("/profile")}
           >
-            <Text style={styles.clearButtonText}>CLEAR</Text>
+            <Ionicons name="person" size={24} color="white" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.copyButton}
-            onPress={copyToClipboard}
-            disabled={!translatedText}
+            style={styles.navItem}
+            onPress={() => router.push("/dashboard")}
           >
-            <Text style={styles.copyButtonText}>COPY</Text>
+            <Ionicons name="home" size={24} color="white" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => router.push("/football")}
+          >
+            <Ionicons name="football" size={24} color="white" />
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Dashboard")}
-          style={styles.backButton}
-        >
-          <Text style={styles.backButtonText}>BACK</Text>
-        </TouchableOpacity>
       </View>
-    </ScrollView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
   container: {
-    flexGrow: 1,
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
   },
-  formWrapper: {
+  arrow: {
+    marginRight: 400,
+  },
+  card: {
+    backgroundColor: "white",
+    padding: 24,
+    borderRadius: 12,
+    elevation: 5,
     width: "100%",
     maxWidth: 600,
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 10,
-    elevation: 5,
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#001D75",
+    fontWeight: "600",
+    color: "#0a2463",
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 20,
     textAlign: "center",
-    marginBottom: 20,
   },
-  languageSelectors: {
+  link: {
+    fontSize: 16,
+    color: "#1e40af",
+    textDecorationLine: "underline",
+  },
+  bottomNav: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  input: {
-    width: "48%",
-    height: 40,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingLeft: 10,
-  },
-  swapButton: {
-    justifyContent: "center",
+    backgroundColor: "#0a2463",
+    height: 60,
+    justifyContent: "space-around",
     alignItems: "center",
-    backgroundColor: "#f1f1f1",
-    borderRadius: 50,
-    padding: 10,
+    paddingHorizontal: 10,
   },
-  swapButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#001D75",
-  },
-  textarea: {
-    height: 120,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingLeft: 10,
-    textAlignVertical: "top",
-    padding: 10,
-  },
-  translatedTextarea: {
-    backgroundColor: "#f9f9f9",
-  },
-  buttonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  clearButton: {
-    backgroundColor: "#f44336",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  clearButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  copyButton: {
-    backgroundColor: "#4caf50",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  copyButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  backButton: {
-    backgroundColor: "#001D75",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  backButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+  navItem: {
+    padding: 8,
   },
 });
 

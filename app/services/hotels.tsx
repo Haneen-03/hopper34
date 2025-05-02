@@ -8,102 +8,45 @@ import {
   ScrollView, 
   ImageBackground,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { Stack } from 'expo-router';
 
 interface HotelItem {
   id: string;
   title: string;
-  description: string;
+  name?: string;
+  description?: string;
   price?: string;
   location?: string;
   imageUrl?: string;
+  image?: string;
+  mapUrl?: string;
+  website?: string;
 }
 
 export default function HotelsScreen() {
   const router = useRouter();
   const [hotels, setHotels] = useState<HotelItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [serviceDocId, setServiceDocId] = useState('');
+  const [selectedHotel, setSelectedHotel] = useState<HotelItem | null>(null);
 
-  // Find the actual Firestore document ID for hotels service
+  // Fetch hotels directly from the 'hotels' document
   useEffect(() => {
-    const findServiceDocId = async () => {
-      try {
-        console.log(`Finding document ID for hotels service`);
-        
-        // First try to find the service by its 'id' field
-        const servicesCollection = collection(db, 'services');
-        const servicesQuery = query(servicesCollection, where('id', '==', 'hotels'));
-        const serviceSnapshot = await getDocs(servicesQuery);
-        
-        if (!serviceSnapshot.empty) {
-          const docId = serviceSnapshot.docs[0].id;
-          console.log(`Found service document ID by 'id' field: ${docId}`);
-          setServiceDocId(docId);
-        } else {
-          // If not found by 'id', try finding by name
-          console.log(`No service found with id: hotels, trying name field`);
-          const nameQuery = query(servicesCollection, where('name', '==', 'Hotels'));
-          const nameSnapshot = await getDocs(nameQuery);
-          
-          if (!nameSnapshot.empty) {
-            const docId = nameSnapshot.docs[0].id;
-            console.log(`Found service document ID by name: ${docId}`);
-            setServiceDocId(docId);
-          } else {
-            // Check all services to find a match
-            console.log(`No service found by name, checking all services`);
-            const allServicesSnapshot = await getDocs(servicesCollection);
-            let found = false;
-            
-            allServicesSnapshot.forEach(doc => {
-              console.log(`Checking service: ${doc.id}`, doc.data());
-              
-              // Check various fields for a match
-              const data = doc.data();
-              if (
-                doc.id === 'hotels' || 
-                data.id === 'hotels' || 
-                data.name?.toLowerCase() === 'hotels'
-              ) {
-                console.log(`Found matching service: ${doc.id}`);
-                setServiceDocId(doc.id);
-                found = true;
-              }
-            });
-            
-            if (!found) {
-              // Use 'hotels' as the document ID as a fallback
-              console.log(`No matching service found, using 'hotels' as document ID`);
-              setServiceDocId('hotels');
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error finding hotel service document ID:', error);
-      }
-    };
-
-    findServiceDocId();
+    fetchHotels();
   }, []);
-
-  // Fetch hotels once we have the service document ID
-  useEffect(() => {
-    if (serviceDocId) {
-      fetchHotels();
-    }
-  }, [serviceDocId]);
 
   const fetchHotels = async () => {
     setLoading(true);
     try {
-      console.log(`Fetching hotels with service doc ID: ${serviceDocId}`);
-      const hotelsRef = collection(db, 'services', serviceDocId, 'items');
+      console.log(`Fetching hotels from the 'hotels' document`);
+      // Direct reference to the hotels document with logical ID
+      const hotelsRef = collection(db, 'services', 'hotels', 'items');
       const snapshot = await getDocs(hotelsRef);
       
       console.log(`Found ${snapshot.size} hotels`);
@@ -113,9 +56,18 @@ export default function HotelsScreen() {
       } else {
         const hotelsData = snapshot.docs.map(doc => {
           console.log(`Hotel: ${doc.id}`, doc.data());
+          const data = doc.data();
           return {
             id: doc.id,
-            ...doc.data()
+            title: data.title || data.name || "Unnamed Hotel",
+            name: data.name || data.title || "Unnamed Hotel",
+            description: data.description || "",
+            price: data.price || "",
+            location: data.location || "",
+            imageUrl: data.imageUrl || data.image || "https://via.placeholder.com/400x200?text=No+Image",
+            image: data.image || data.imageUrl || "https://via.placeholder.com/400x200?text=No+Image",
+            mapUrl: data.mapUrl || `https://www.google.com/maps?q=${encodeURIComponent(data.location || "")}`,
+            website: data.website || "",
           };
         }) as HotelItem[];
         
@@ -130,115 +82,203 @@ export default function HotelsScreen() {
     }
   };
 
-  return (
-    <ImageBackground
-      source={require("../../assets/images/thefillbac.png")}
-      style={styles.backgroundImage}
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Hotels</Text>
-          <View style={{ width: 24 }} /> {/* Empty view for balance */}
-        </View>
-        
-        {/* Debug info */}
-        <View style={styles.debugContainer}>
-          <Text style={styles.debugText}>Service ID: {serviceDocId || 'Not found'}</Text>
-        </View>
-        
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#0a2463" />
-          </View>
-        ) : (
-          <ScrollView style={styles.scrollView}>
-            <View style={styles.content}>
-              <Text style={styles.sectionTitle}>Available Hotels</Text>
-              
-              {hotels.length > 0 ? (
-                hotels.map(hotel => (
-                  <View key={hotel.id} style={styles.hotelCard}>
-                    {hotel.imageUrl && (
-                      <Image 
-                        source={{ uri: hotel.imageUrl || 'https://via.placeholder.com/400x200?text=No+Image' }} 
-                        style={styles.hotelImage}
-                      />
-                    )}
-                    <View style={styles.hotelInfo}>
-                      <Text style={styles.hotelTitle}>{hotel.title}</Text>
-                      {hotel.location && (
-                        <Text style={styles.hotelLocation}>{hotel.location}</Text>
-                      )}
-                      <Text style={styles.hotelDescription}>{hotel.description}</Text>
-                      {hotel.price && (
-                        <Text style={styles.hotelPrice}>Price: {hotel.price} per night</Text>
-                      )}
-                      <TouchableOpacity style={styles.bookButton}>
-                        <Text style={styles.bookButtonText}>Book Now</Text>
+  const openWebsite = (url: string) => {
+    if (url) {
+      Linking.openURL(url).catch((err) =>
+        console.error("Error opening website:", err)
+      );
+    }
+  };
+
+  const openMap = (mapUrl: string) => {
+    if (mapUrl) {
+      Linking.openURL(mapUrl).catch((err) =>
+        console.error("Error opening map:", err)
+      );
+    }
+  };
+
+  const showHotelDetails = (hotel: HotelItem) => {
+    setSelectedHotel(hotel);
+  };
+
+  const backToList = () => {
+    setSelectedHotel(null);
+  };
+
+  const renderHotelsList = () => {
+    return (
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>Hotels in Saudi Arabia</Text>
+          
+          {hotels.length > 0 ? (
+            hotels.map(hotel => (
+              <View key={hotel.id} style={styles.hotelCard}>
+                <Image 
+                  source={{ uri: hotel.imageUrl || hotel.image }} 
+                  style={styles.hotelImage}
+                />
+                <View style={styles.hotelInfo}>
+                  <Text style={styles.hotelTitle}>{hotel.title || hotel.name}</Text>
+                  {hotel.location && (
+                    <Text style={styles.hotelLocation}>📍 {hotel.location}</Text>
+                  )}
+                  {hotel.price && (
+                    <Text style={styles.hotelPrice}>Price: {hotel.price} per night</Text>
+                  )}
+                  
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity 
+                      style={styles.detailButton}
+                      onPress={() => showHotelDetails(hotel)}
+                    >
+                      <Text style={styles.buttonText}>View Details</Text>
+                    </TouchableOpacity>
+
+                    {hotel.mapUrl && (
+                      <TouchableOpacity 
+                        style={styles.mapButton}
+                        onPress={() => openMap(hotel.mapUrl as string)}
+                      >
+                        <Text style={styles.buttonText}>View on Map</Text>
                       </TouchableOpacity>
-                    </View>
+                    )}
                   </View>
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No hotels available at the moment.</Text>
-              )}
+                  
+                  {hotel.website && (
+                    <TouchableOpacity 
+                      style={styles.websiteButton}
+                      onPress={() => openWebsite(hotel.website as string)}
+                    >
+                      <Text style={styles.buttonText}>Visit Website</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No hotels available at the moment.</Text>
+          )}
+        </View>
+      </ScrollView>
+    );
+  };
+
+  const renderHotelDetails = () => {
+    if (!selectedHotel) return null;
+    
+    return (
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.detailContainer}>
+          <Image 
+            source={{ uri: selectedHotel.imageUrl || selectedHotel.image }} 
+            style={styles.detailImage}
+          />
+          <Text style={styles.detailTitle}>{selectedHotel.title || selectedHotel.name}</Text>
+          <Text style={styles.detailLocation}>📍 {selectedHotel.location}</Text>
+          
+          {selectedHotel.description && (
+            <Text style={styles.detailDescription}>{selectedHotel.description}</Text>
+          )}
+          
+          {selectedHotel.price && (
+            <Text style={styles.detailPrice}>Price: {selectedHotel.price} per night</Text>
+          )}
+          
+          <View style={styles.detailButtonRow}>
+            {selectedHotel.mapUrl && (
+              <TouchableOpacity 
+                style={styles.detailMapButton}
+                onPress={() => openMap(selectedHotel.mapUrl as string)}
+              >
+                <Text style={styles.buttonText}>View on Map</Text>
+              </TouchableOpacity>
+            )}
+            
+            {selectedHotel.website && (
+              <TouchableOpacity 
+                style={styles.detailWebsiteButton}
+                onPress={() => openWebsite(selectedHotel.website as string)}
+              >
+                <Text style={styles.buttonText}>Visit Website</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={backToList}
+          >
+            <Text style={styles.backButtonText}>🔙 Back to List</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ 
+        headerShown: false  // This hides the black header
+      }} />
+      
+      <ImageBackground
+        source={require("../../assets/images/thefillbac.png")}
+        style={styles.backgroundImage}
+      >
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => selectedHotel ? backToList() : router.back()}>
+              <Ionicons name="arrow-back" size={24} color="black" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              {selectedHotel ? selectedHotel.title || selectedHotel.name : ""}
+            </Text>
+            <View style={{ width: 24 }} />
+          </View>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#0a2463" />
             </View>
-          </ScrollView>
-        )}
-        
+          ) : (
+            selectedHotel ? renderHotelDetails() : renderHotelsList()
+          )}
+          
         {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
           <TouchableOpacity 
             style={styles.navItem}
-            onPress={() => router.push("/")}
+            onPress={() => router.push("/profile")}
           >
             <Ionicons name="person" size={24} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navItem}
-            onPress={() => router.push("/football")}
-          >
-            <Ionicons name="football" size={24} color="white" />
-          </TouchableOpacity>
+
           <TouchableOpacity 
             style={styles.navItem}
             onPress={() => router.push("/dashboard")}
           >
             <Ionicons name="home" size={24} color="white" />
           </TouchableOpacity>
+
           <TouchableOpacity 
             style={styles.navItem}
-            onPress={() => router.push("/services/googleMaps")}
+            onPress={() => router.push("/football")}
           >
-            <Ionicons name="map-outline" size={24} color="white" />
+            <Ionicons name="football" size={24} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navItem}
-            onPress={() => router.push("/services/translation")}
-          >
-            <Ionicons name="chatbubbles-outline" size={24} color="white" />
-          </TouchableOpacity>
+
         </View>
-      </View>
-    </ImageBackground>
+        </View>
+      </ImageBackground>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-    debugContainer: {
-        paddingHorizontal: 16,
-        paddingVertical: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-      },
-      debugText: {
-        fontSize: 12,
-        color: '#666',
-      },
-    backgroundImage: {
+  backgroundImage: {
     flex: 1,
     width: '100%',
     height: '100%',
@@ -276,6 +316,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0a2463',
     marginBottom: 16,
+    textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
@@ -292,7 +333,7 @@ const styles = StyleSheet.create({
   hotelImage: {
     width: '100%',
     height: 200,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   hotelInfo: {
     padding: 16,
@@ -320,14 +361,113 @@ const styles = StyleSheet.create({
     color: '#0a2463',
     marginBottom: 12,
   },
-  bookButton: {
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  detailButton: {
+    backgroundColor: '#0a2463',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 5,
+  },
+  mapButton: {
+    backgroundColor: '#0a2463',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 5,
+  },
+  websiteButton: {
     backgroundColor: '#0a2463',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
-  bookButtonText: {
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  // Hotel Details Styles
+  detailContainer: {
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 10,
+    margin: 16,
+  },
+  detailImage: {
+    width: '100%',
+    height: 250,
+    borderRadius: 10,
+    marginBottom: 16,
+    resizeMode: 'contain',
+  },
+  detailTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0a2463',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  detailLocation: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  detailDescription: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 24,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  detailPrice: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0a2463',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  detailButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  detailMapButton: {
+    backgroundColor: '#0a2463',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  detailWebsiteButton: {
+    backgroundColor: '#0a2463',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 8,
+  },
+  backButton: {
+    backgroundColor: '#0a2463',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  backButtonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,

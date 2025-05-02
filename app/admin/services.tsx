@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { collection, getDocs, doc, getDoc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import AdminProtectedRoute from '../../components/AdminProtectedRoute';
 
@@ -50,7 +50,11 @@ function ServiceManagement() {
     { id: 'restaurants', name: 'Restaurants', description: 'Dining services', route: '/services/restaurants' },
     { id: 'transportation', name: 'Transportation', description: 'Getting around', route: '/services/transportation' },
     { id: 'simCards', name: 'SIM Cards', description: 'Connectivity services', route: '/services/simCards' },
-    { id: 'guides', name: 'Guides', description: 'Tour guide services', route: '/services/guides' }
+    { id: 'guides', name: 'Guides', description: 'Tour guide services', route: '/services/guides' },
+    { id: 'bank', name: 'Banks', description: 'Bank services', route: '/services/bank' },
+    { id: 'events', name: 'Events', description: 'Events services', route: '/services/events' }
+
+
   ];
 
   useEffect(() => {
@@ -95,27 +99,19 @@ function ServiceManagement() {
 
   const initializeFixedServices = async () => {
     try {
-      const servicesCollection = collection(db, 'services');
-      
-      // Check if services already exist
-      const snapshot = await getDocs(servicesCollection);
-      if (!snapshot.empty) {
-        Alert.alert('Services Exist', 'Fixed services are already initialized');
-        return;
-      }
-      
       console.log("Initializing fixed services...");
       
-      // Add all predefined services to Firestore
+      // Add all predefined services to Firestore with logical IDs
       for (const service of serviceTypes) {
-        await addDoc(servicesCollection, {
+        // Use the service ID directly as the document ID
+        await setDoc(doc(db, 'services', service.id), {
           id: service.id,
           name: service.name,
           description: service.description,
           route: service.route,
           createdAt: new Date().toISOString()
         });
-        console.log(`Service ${service.name} added`);
+        console.log(`Service ${service.name} added with ID ${service.id}`);
       }
       
       Alert.alert('Success', 'Fixed services initialized successfully');
@@ -132,9 +128,13 @@ function ServiceManagement() {
       return;
     }
 
+    // Make sure ID is URL-friendly (lowercase, no spaces)
+    const serviceId = currentService.id || currentService.name.toLowerCase().replace(/\s+/g, '-');
+
     try {
       if (isEditing) {
         // Update existing service
+        console.log(`Updating service with ID: ${currentService.id}`);
         const serviceRef = doc(db, 'services', currentService.id);
         await updateDoc(serviceRef, {
           name: currentService.name,
@@ -150,9 +150,10 @@ function ServiceManagement() {
         
         Alert.alert('Success', 'Service updated successfully');
       } else {
-        // Add new service
-        const servicesCollection = collection(db, 'services');
-        const newServiceRef = await addDoc(servicesCollection, {
+        // Add new service with direct document ID
+        console.log(`Creating new service with ID: ${serviceId}`);
+        await setDoc(doc(db, 'services', serviceId), {
+          id: serviceId,
           name: currentService.name,
           description: currentService.description,
           route: currentService.route,
@@ -160,7 +161,7 @@ function ServiceManagement() {
         });
         
         // Add to local state
-        setServices([...services, { ...currentService, id: newServiceRef.id }]);
+        setServices([...services, { ...currentService, id: serviceId }]);
         Alert.alert('Success', 'Service added successfully');
       }
       
@@ -233,13 +234,13 @@ function ServiceManagement() {
           </TouchableOpacity>
         </View>
         
-        {/* Initialize Services Button */}
-        <TouchableOpacity 
+
+        {/* <TouchableOpacity 
           style={styles.initButton}
           onPress={initializeFixedServices}
         >
           <Text style={styles.initButtonText}>Initialize Fixed Services</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -261,6 +262,9 @@ function ServiceManagement() {
                     <Text style={styles.serviceRoute}>
                       Route: {service.route}
                     </Text>
+                    <Text style={styles.serviceId}>
+                      ID: {service.id}
+                    </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={24} color="#0a2463" />
                 </TouchableOpacity>
@@ -271,12 +275,12 @@ function ServiceManagement() {
                   >
                     <Ionicons name="create-outline" size={20} color="white" />
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  {/* <TouchableOpacity 
                     style={[styles.actionButton, styles.deleteButton]}
                     onPress={() => handleDeleteService(service.id)}
                   >
                     <Ionicons name="trash-outline" size={20} color="white" />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
               </View>
             ))}
@@ -295,6 +299,15 @@ function ServiceManagement() {
               <Text style={styles.modalTitle}>
                 {isEditing ? 'Edit Service' : 'Add New Service'}
               </Text>
+              
+              {!isEditing && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Service ID (lowercase, no spaces)"
+                  value={currentService.id}
+                  onChangeText={(text) => setCurrentService({...currentService, id: text.toLowerCase().replace(/\s+/g, '-')})}
+                />
+              )}
               
               <TextInput
                 style={styles.input}
@@ -339,36 +352,27 @@ function ServiceManagement() {
 
         {/* Bottom Navigation */}
         <View style={styles.bottomNav}>
-          <TouchableOpacity 
+        <TouchableOpacity 
             style={styles.navItem}
-            onPress={() => router.push("/")}
-          >
+            onPress={() => router.push("/profile")} // 👤 Profile page
+        >
             <Ionicons name="person" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity 
+        </TouchableOpacity>
+
+
+        <TouchableOpacity 
             style={styles.navItem}
-            onPress={() => router.push("/football")}
-          >
-            <Ionicons name="football" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navItem}
-            onPress={() => router.push("/dashboard")}
-          >
+            onPress={() => router.push("/dashboard")} // 🏠 Dashboard
+        >
             <Ionicons name="home" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity 
+        </TouchableOpacity>
+
+        <TouchableOpacity 
             style={styles.navItem}
-            onPress={() => router.push("/services/googleMaps")}
-          >
-            <Ionicons name="map-outline" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.navItem}
-            onPress={() => router.push("/services/translation")}
-          >
-            <Ionicons name="chatbubbles-outline" size={24} color="white" />
-          </TouchableOpacity>
+            onPress={() => router.push("/football")} // ⚽ Football
+        >
+            <Ionicons name="football" size={24} color="white" />
+        </TouchableOpacity>
         </View>
       </View>
     </ImageBackground>
@@ -405,6 +409,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#0a2463',
+    marginTop: 15,
   },
   initButton: {
     backgroundColor: '#28a745',
@@ -456,6 +461,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     marginTop: 4,
+  },
+  serviceId: {
+    fontSize: 10,
+    color: '#aaa',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   serviceActions: {
     flexDirection: 'row',

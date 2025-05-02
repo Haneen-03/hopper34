@@ -17,31 +17,33 @@ export const AuthProvider = ({ children }) => {
   // Listen to the Firebase Auth state and set the local state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      
       if (user) {
-        // Check if user is admin
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            setIsAdmin(userDoc.data().isAdmin || false);
-          } else {
-            setIsAdmin(false);
-          }
+          const userData = userDoc.exists() ? userDoc.data() : {};
+  
+          setCurrentUser({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            fullName: userData.fullName || user.displayName || 'User',
+            isAdmin: userData.isAdmin || false,
+          });
+          setIsAdmin(userData.isAdmin || false);
         } catch (error) {
-          console.error("Error checking admin status:", error);
-          setIsAdmin(false);
+          console.error("Error fetching user doc:", error);
         }
       } else {
-        setIsAdmin(false);
+        setCurrentUser(null);
       }
-      
+  
+      // ✅ This is what was missing:
       setLoading(false);
     });
-
-    // Cleanup subscription on unmount
-    return unsubscribe;
+  
+    return () => unsubscribe();
   }, []);
+  
 
   // The value passed to the Provider gives access to the context's value
   const value = {
@@ -52,8 +54,8 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
+{children}
+</AuthContext.Provider>
   );
 };
 
